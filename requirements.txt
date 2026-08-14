@@ -1,0 +1,9 @@
+numpy>=1.24
+Pillow>=10.0
+torch>=2.1
+torchvision>=0.16
+
+scikit-image>=0.22
+pytorch-msssim>=1.0.0
+
+lpips>=0.1.4
