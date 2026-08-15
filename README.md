@@ -34,12 +34,14 @@ git clone https://github.com/Anubhav-Mondal/Solvix.git
 cd Solvix
 python3.12 -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install --index-url https://download.pytorch.org/whl/cu124 torch
 pip install -r requirements.txt
 ```
 
-Requires **Python 3.12**. Installs the CUDA 12.4 build of PyTorch first, so
-`pip install -r requirements.txt` doesn't pull a CPU-only wheel over it.
-Run inference with `--device cuda` (the default when CUDA is available).
+Requires **Python 3.12**. If CUDA is available on your machine, install the
+matching PyTorch CUDA 12.4 wheel explicitly before the rest of the deps so
+`pip install -r requirements.txt` does not replace it with a CPU build. Run
+inference with `--device cuda` (the default when CUDA is available).
 
 **If you don't have an NVIDIA GPU (CPU-only):**
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Quick viewer for a single .npy image file.
 

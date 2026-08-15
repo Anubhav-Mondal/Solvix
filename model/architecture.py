@@ -1,8 +1,4 @@
 """Model architecture for the KLA image restoration hackathon.
-
-This file intentionally contains only the trainable restoration network and
-small model utilities.  It is checkpoint-compatible with the original
-Colab training code and with the provided evaluate.py.
 """
 
 from __future__ import annotations

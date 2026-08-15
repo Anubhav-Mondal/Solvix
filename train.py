@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Train the KLA image restoration model.
 
 Expected paired dataset layout:

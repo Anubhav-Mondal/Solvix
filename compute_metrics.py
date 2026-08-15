@@ -1,12 +1,6 @@
 """
 Compute PSNR / SSIM / LPIPS between restored outputs and ground truth.
 
-This is a reporting/benchmarking helper, NOT part of the required
-evaluate.py inference pipeline. It expects that you have already run
-evaluate.py to produce restored .npy outputs, and that you have matching
-ground-truth .npy files (e.g. your held-out validation split, since the
-hidden test set's GT won't be available to you).
-
 Usage:
     python compute_metrics.py \
         --pred_dir outputs/ \
@@ -14,7 +8,7 @@ Usage:
         --csv_out metrics_report.csv
 
 Prints per-image PSNR/SSIM/LPIPS plus overall means, and optionally
-writes a CSV (useful to paste straight into your Results slide).
+writes a CSV.
 
 Depends on: numpy, scikit-image, lpips, torch. These are training/eval
 -reporting-only dependencies -- intentionally NOT required by evaluate.py.
