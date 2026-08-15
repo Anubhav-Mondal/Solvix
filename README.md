@@ -25,15 +25,37 @@ root
 
 ## Setup
 
+Choose the path that matches your machine.
+
+**If you have an NVIDIA GPU (CUDA available)**
+
 ```bash
 git clone https://github.com/Anubhav-Mondal/Solvix.git
 cd Solvix
-python -m venv venv
+python3.12 -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Requires **Python 3.12**. Installs the CUDA 12.4 build of PyTorch first, so
+`pip install -r requirements.txt` doesn't pull a CPU-only wheel over it.
+Run inference with `--device cuda` (the default when CUDA is available).
+
+**If you don't have an NVIDIA GPU (CPU-only):**
+
+```bash
+git clone https://github.com/Anubhav-Mondal/Solvix.git
+cd Solvix
+python3 -m venv venv             # any Python >= 3.11
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-`requirements.txt` covers everything `evaluate.py` needs (torch, numpy,
+Any Python 3.11+ works here. `pip install torch` (no index URL) pulls the
+latest CPU build. Inference will be significantly slower than on GPU — see
+"Timing" below.
+
+`requirements.txt` covers everything else `evaluate.py` needs (numpy,
 pillow). If you also want to run `train.py` or `compute_metrics.py`, install
 the extra training/reporting dependencies:
 
@@ -41,8 +63,9 @@ the extra training/reporting dependencies:
 pip install scikit-image pytorch-msssim lpips
 ```
 
-(or just `pip install -r requirements-freeze.txt` to match our exact training
-environment.)
+(or `pip install -r requirements-freeze.txt` to match our exact Colab
+training environment — note that freeze includes the CUDA 12.4 torch build,
+so use it only on a CUDA machine.)
 
 ## Model weights
 
@@ -89,7 +112,7 @@ This script only depends on `torch`, `numpy`, and `pillow` (everything in
 mounting. It runs standalone on a fresh machine.
 
 ## Reproducing training
- 
+
 ```bash
 python train.py \
     --degraded_dir data/train/NoisyLR \
@@ -98,63 +121,72 @@ python train.py \
     --epochs 20 \
     --batch_size 8
 ```
- 
+
 This expects a paired dataset layout:
- 
+
 ```
 data/train/NoisyLR/*.npy   # degraded inputs, e.g. 128x128
 data/train/GT/*.npy         # matching filenames, ground truth, e.g. 256x256
 ```
- 
+
 A 10% split of the training set is automatically held out for validation.
 Checkpoints are written to `<out_dir>/`:
- 
+
 - `model_latest.pt` — saved every `--save_every` epochs (default: every epoch)
 - `model_best.pt` — best validation SSIM so far (EMA weights)
 - `model_final.pt` — final EMA weights at the end of training
+
 Our submitted `model/model.pt` is `model_best.pt` from a run resumed across
 multiple sessions (v1 → v2 → v3 checkpoints), totaling roughly 60 epochs.
 Full loss weights, learning rate, and other hyperparameters are the
 `argparse` defaults in `train.py` unless noted otherwise in
 `notebooks/training.ipynb`.
- 
+
 `notebooks/training.ipynb` is a thin Colab wrapper around this same script —
 it mounts Drive, sets dataset paths, and calls `train.py`'s `main()`
 directly, so it is not a second implementation to keep in sync.
- 
+
 ## Computing PSNR / SSIM / LPIPS
- 
+
 `evaluate.py` intentionally never computes quality metrics — it only takes
 degraded inputs and writes restored outputs, since KLA's hidden test set has
 no ground truth available to us. To reproduce the numbers reported in our
 submission slides, run `evaluate.py` on our own held-out validation split
 (which does have matching GT), then score it:
- 
+
 ```bash
 python evaluate.py --input_dir data/val/NoisyLR --output_dir val_outputs/
 python compute_metrics.py --pred_dir val_outputs/ --gt_dir data/val/GT --csv_out metrics_report.csv
 ```
- 
+
 Prints per-image and mean PSNR / SSIM / LPIPS, and writes a CSV. Requires
 `scikit-image` and `lpips` (not required by `evaluate.py` itself).
- 
+
 **Note:** these numbers are computed on our internal validation split, not
 on KLA's private/hidden test set.
- 
+
+### Results (internal validation split)
+
+| Metric | Mean |
+|---|---|
+| PSNR | 28.362 dB |
+| SSIM | 0.7630 |
+| LPIPS | 0.1776 |
+
 ## Restored test outputs
- 
+
 `outputs/` contains this model's restored `.npy`/`.png` outputs on the
 provided test set, generated with:
- 
+
 ```bash
 python evaluate.py --input_dir <test_set_dir> --output_dir outputs/
 ```
- 
+
 ## Model architecture
- 
+
 `RestorationNet` (`model/architecture.py`): an RRDB-style (Residual-in-
 Residual Dense Block) convolutional network.
- 
+
 - Input: `(B, 1, H, W)`, single-channel, roughly `[0, 1]`
 - Output: `(B, 1, scale*H, scale*W)`, clamped to `[0, 1]`
 - Default config: `feat_ch=48`, `num_blocks=8`, `growth_ch=32`, `scale=2`
@@ -163,26 +195,31 @@ Residual Dense Block) convolutional network.
   high-frequency detail recovery.
 - Upsampling via PixelShuffle with ICNR-initialized convolutions (reduces
   checkerboard artifacts vs. random init).
+
 Loss (`train.py`): weighted combination of Charbonnier (smooth L1), MS-SSIM,
 Sobel gradient (edge) loss, FFT magnitude loss, and LPIPS perceptual loss —
 see `CombinedRestorationLoss` for weights.
- 
+
 ## Timing
- 
+
 Measured on 400 test images, NVIDIA RTX 3050:
- 
+
 | | Total (400 images) | Per-image | Notes |
 |---|---|---|---|
 | With TTA (default) | 176 s | **429 ms** | 8x flip/rotate averaged, best quality |
 | Without TTA (`--no_tta`) | 38.8 s | **70.5 ms** | single forward pass |
- 
+
 TTA gives an ~6x slowdown for the quality gain of averaging 8 augmented
 predictions. Use `--no_tta` if inference speed is the priority.
- 
+
+These numbers are from a consumer GPU (RTX 3050); KLA's H100 benchmarking
+run should be substantially faster on both settings.
+
 ## Tech stack
- 
+
 - PyTorch 2.6 (CUDA 12.4)
 - Trained on: Google Colab, NVIDIA T4
 - Inference benchmarked on: NVIDIA RTX 3050
 - Model size: 4,608,817 parameters (~70.6 MB on disk)
-- Training time: ~8 minutes/epochs
+- Training time: ~8 minutes/epoch (~60 epochs total across resumed sessions,
+  roughly 8 hours of GPU time)
