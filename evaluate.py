@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Standalone evaluation / inference script for the KLA image-restoration model.
 
@@ -31,16 +30,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 from PIL import Image
 
-CHECKPOINT_PATH = "model/model_best.pt"
+CHECKPOINT_PATH = "model/model.pt"
 
 # =============================================================================
-# Model definition (must exactly match the architecture used in training.py)
+# Model definition 
 # =============================================================================
 
 from model.architecture import DenseBlock, RRDB, RestorationNet
 
 # =============================================================================
-# Test-time augmentation (matches training.py's tta_predict)
+# Test-time augmentation 
 # =============================================================================
 
 def tta_predict(model, x):
