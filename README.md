@@ -11,15 +11,12 @@ root
 ├── model/
 │   ├── architecture.py     # RestorationNet model definition
 │   └── model.pt             # trained weights (see "Model weights" below)
-├── notebooks/
-│   ├── training.ipynb       # thin wrapper that runs train.py (Colab-friendly)
-│   └── visualize_results.ipynb  # qualitative + quantitative result inspection
 ├── evaluate.py               # standalone inference script
 ├── train.py                  # training script (reproduces training from scratch)
 ├── compute_metrics.py        # PSNR/SSIM/LPIPS reporting on a val split with GT
-├── requirements.txt           # minimal runtime deps for evaluate.py
-├── requirements-freeze.txt    # full `pip freeze` from the training environment
+├── requirements.txt
 ├── outputs/                   # restored outputs on the test set
+├── show_npy.py                # single .npy file viewer
 └── README.md
 ```
 
